@@ -24,17 +24,23 @@ public class MainActivity extends Activity {
         }
 
         boolean canMoveOn(Card other) {
+            if (!faceUp) return false;
             if (other == null) return value == 13;
+            if (!other.faceUp) return false;
 
-            boolean thisRed =
-                suit.equals("H") || suit.equals("D");
+            boolean red = suit.equals("H") || suit.equals("D");
             boolean otherRed =
                 other.suit.equals("H") || other.suit.equals("D");
 
-            return faceUp
-                && other.faceUp
-                && thisRed != otherRed
-                && value == other.value - 1;
+            return red != otherRed && value == other.value - 1;
+        }
+
+        String name() {
+            String[] ranks = {
+                "", "A", "2", "3", "4", "5", "6",
+                "7", "8", "9", "10", "J", "Q", "K"
+            };
+            return ranks[value] + suit;
         }
     }
 
@@ -55,24 +61,43 @@ public class MainActivity extends Activity {
         title.setGravity(Gravity.CENTER);
 
         status = new TextView(this);
-        status.setText("Solitaire move engine ready.");
+        status.setText("Ready to test move selection.");
         status.setTextSize(17);
         status.setTextColor(Color.WHITE);
         status.setGravity(Gravity.CENTER);
         status.setPadding(0, 30, 0, 30);
 
         Button start = new Button(this);
-        start.setText("Test Card Rules");
+        start.setText("Find Best Move");
 
         start.setOnClickListener(v -> {
-            Card king = new Card("H", 13, true);
-            Card queen = new Card("S", 12, true);
+            Card[] choices = {
+                new Card("S", 12, true),
+                new Card("H", 9, true),
+                new Card("D", 7, true)
+            };
 
-            boolean valid = queen.canMoveOn(king);
+            Card target = new Card("H", 13, true);
+            Card best = null;
 
-            status.setText(valid
-                ? "Rules test passed! Queen can move on King."
-                : "Rules test failed.");
+            for (Card card : choices) {
+                if (card.canMoveOn(target)) {
+                    best = card;
+                    break;
+                }
+            }
+
+            if (best != null) {
+                status.setText(
+                    "Move found!\n\n" +
+                    best.name() + " can move onto " +
+                    target.name() + ".\n\n" +
+                    "This is a test with sample cards, " +
+                    "not the live Jawaker board."
+                );
+            } else {
+                status.setText("No legal move found.");
+            }
         });
 
         layout.addView(title);
