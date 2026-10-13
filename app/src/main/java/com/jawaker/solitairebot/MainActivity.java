@@ -1,4 +1,3 @@
-
 package com.jawaker.solitairebot;
 
 import android.app.Activity;
@@ -7,8 +6,11 @@ import android.graphics.Color;
 import android.view.Gravity;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Button;
 
 public class MainActivity extends Activity {
+
+    TextView status;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,22 +24,31 @@ public class MainActivity extends Activity {
 
         TextView title = new TextView(this);
         title.setText("Jawaker Solitaire Bot");
-        title.setTextSize(26);
+        title.setTextSize(25);
         title.setTextColor(Color.WHITE);
         title.setGravity(Gravity.CENTER);
 
-        TextView status = new TextView(this);
-        status.setText(
-            "Project initialized\n\n" +
-            "Solitaire automation is not enabled yet."
-        );
-        status.setTextSize(16);
+        status = new TextView(this);
+        status.setText("Bot ready\n\nPress the button to test.");
+        status.setTextSize(17);
         status.setTextColor(Color.WHITE);
         status.setGravity(Gravity.CENTER);
-        status.setPadding(0, 32, 0, 0);
+        status.setPadding(0, 30, 0, 30);
+
+        Button start = new Button(this);
+        start.setText("Test Bot");
+
+        start.setOnClickListener(v -> {
+            status.setText(
+                "Test successful!\n\n" +
+                "The app responds to button presses.\n\n" +
+                "Card detection is not added yet."
+            );
+        });
 
         layout.addView(title);
         layout.addView(status);
+        layout.addView(start);
 
         setContentView(layout);
     }
