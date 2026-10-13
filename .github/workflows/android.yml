@@ -29,10 +29,11 @@ jobs:
         with:
           gradle-version: "8.9"
 
-      - name: Build APK
-        run: gradle assembleDebug
+      - name: Build APK with detailed errors
+        run: gradle assembleDebug --stacktrace --info
 
       - name: Save APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: jawaker-solitaire-apk
