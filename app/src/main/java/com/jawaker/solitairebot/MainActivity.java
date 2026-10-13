@@ -12,6 +12,32 @@ public class MainActivity extends Activity {
 
     TextView status;
 
+    static class Card {
+        String suit;
+        int value;
+        boolean faceUp;
+
+        Card(String suit, int value, boolean faceUp) {
+            this.suit = suit;
+            this.value = value;
+            this.faceUp = faceUp;
+        }
+
+        boolean canMoveOn(Card other) {
+            if (other == null) return value == 13;
+
+            boolean thisRed =
+                suit.equals("H") || suit.equals("D");
+            boolean otherRed =
+                other.suit.equals("H") || other.suit.equals("D");
+
+            return faceUp
+                && other.faceUp
+                && thisRed != otherRed
+                && value == other.value - 1;
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -29,21 +55,24 @@ public class MainActivity extends Activity {
         title.setGravity(Gravity.CENTER);
 
         status = new TextView(this);
-        status.setText("Bot ready\n\nPress the button to test.");
+        status.setText("Solitaire move engine ready.");
         status.setTextSize(17);
         status.setTextColor(Color.WHITE);
         status.setGravity(Gravity.CENTER);
         status.setPadding(0, 30, 0, 30);
 
         Button start = new Button(this);
-        start.setText("Test Bot");
+        start.setText("Test Card Rules");
 
         start.setOnClickListener(v -> {
-            status.setText(
-                "Test successful!\n\n" +
-                "The app responds to button presses.\n\n" +
-                "Card detection is not added yet."
-            );
+            Card king = new Card("H", 13, true);
+            Card queen = new Card("S", 12, true);
+
+            boolean valid = queen.canMoveOn(king);
+
+            status.setText(valid
+                ? "Rules test passed! Queen can move on King."
+                : "Rules test failed.");
         });
 
         layout.addView(title);
