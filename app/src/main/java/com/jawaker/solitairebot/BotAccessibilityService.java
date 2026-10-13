@@ -1,3 +1,4 @@
+
 package com.jawaker.solitairebot;
 
 import android.accessibilityservice.AccessibilityService;
@@ -6,6 +7,9 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.os.SystemClock;
 import android.util.Log;
 import android.graphics.Rect;
+
+import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
 
 public class BotAccessibilityService extends AccessibilityService {
 
@@ -17,54 +21,62 @@ public class BotAccessibilityService extends AccessibilityService {
         if (event == null) return;
 
         long now = SystemClock.uptimeMillis();
-
-        // فحص الشاشة عند تغيّر محتواها، مع منع التكرار السريع.
-        if (now - lastScanTime < 700) return;
+        if (now - lastScanTime < 1000) return;
         lastScanTime = now;
 
         AccessibilityNodeInfo root = getRootInActiveWindow();
-        if (root == null) {
-            Log.d(TAG, "No active window available");
-            return;
-        }
+        if (root == null) return;
+
+        StringBuilder report = new StringBuilder();
 
         try {
-            Log.d(TAG, "========== SCREEN SCAN START ==========");
-            Log.d(TAG, "Package: " + event.getPackageName());
+            report.append("SCREEN SCAN\n");
+            report.append("Package: ")
+                    .append(event.getPackageName())
+                    .append("\n\n");
 
-            scanAllNodes(root, 0);
+            scanAllNodes(root, 0, report);
 
-            Log.d(TAG, "========== SCREEN SCAN END ==========");
+            try (FileOutputStream output = openFileOutput(
+                    "screen_scan.txt", MODE_PRIVATE)) {
+                output.write(report.toString().getBytes(
+                        StandardCharsets.UTF_8));
+            }
+
+            Log.d(TAG, "Scan saved to screen_scan.txt");
+        } catch (Exception e) {
+            Log.e(TAG, "Could not save scan", e);
         } finally {
             root.recycle();
         }
     }
 
-    private void scanAllNodes(AccessibilityNodeInfo node, int depth) {
+    private void scanAllNodes(
+            AccessibilityNodeInfo node,
+            int depth,
+            StringBuilder report) {
+
         if (node == null) return;
 
         Rect bounds = new Rect();
         node.getBoundsInScreen(bounds);
 
-        CharSequence text = node.getText();
-        CharSequence description = node.getContentDescription();
-        CharSequence className = node.getClassName();
-
-        Log.d(TAG,
-                "depth=" + depth
-                + " class=" + className
-                + " text=" + text
-                + " description=" + description
-                + " clickable=" + node.isClickable()
-                + " enabled=" + node.isEnabled()
-                + " bounds=" + bounds.flattenToString());
+        report.append("Depth: ").append(depth)
+                .append(" | Class: ").append(node.getClassName())
+                .append(" | Text: ").append(node.getText())
+                .append(" | Description: ")
+                .append(node.getContentDescription())
+                .append(" | Clickable: ").append(node.isClickable())
+                .append(" | Bounds: ")
+                .append(bounds.flattenToString())
+                .append("\n");
 
         for (int i = 0; i < node.getChildCount(); i++) {
             AccessibilityNodeInfo child = node.getChild(i);
 
             if (child != null) {
                 try {
-                    scanAllNodes(child, depth + 1);
+                    scanAllNodes(child, depth + 1, report);
                 } finally {
                     child.recycle();
                 }
