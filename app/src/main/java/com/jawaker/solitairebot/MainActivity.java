@@ -1,54 +1,21 @@
+
 package com.jawaker.solitairebot;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.content.Intent;
+import android.net.Uri;
 import android.view.Gravity;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
-
-import java.util.ArrayList;
-import java.util.List;
+import java.io.FileInputStream;
+import java.io.ByteArrayOutputStream;
 
 public class MainActivity extends Activity {
 
-    static class Card {
-        String rank;
-        String suit;
-
-        Card(String rank, String suit) {
-            this.rank = rank;
-            this.suit = suit;
-        }
-
-        boolean isRed() {
-            return suit.equals("♥") || suit.equals("♦");
-        }
-
-        boolean canMoveOnto(Card other) {
-            if (other == null) {
-                return rank.equals("K");
-            }
-
-            return isRed() != other.isRed()
-                    && value(rank) == value(other.rank) + 1;
-        }
-
-        static int value(String rank) {
-            switch (rank) {
-                case "A": return 1;
-                case "J": return 11;
-                case "Q": return 12;
-                case "K": return 13;
-                default: return Integer.parseInt(rank);
-            }
-        }
-
-        @Override
-        public String toString() {
-            return rank + suit;
-        }
-    }
+    private TextView result;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,12 +23,11 @@ public class MainActivity extends Activity {
 
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setGravity(Gravity.CENTER);
-        layout.setPadding(32, 32, 32, 32);
+        layout.setPadding(24, 24, 24, 24);
 
         TextView title = new TextView(this);
         title.setText("Jawaker Solitaire Bot");
-        title.setTextSize(23);
+        title.setTextSize(22);
         title.setGravity(Gravity.CENTER);
         layout.addView(title);
 
@@ -70,39 +36,55 @@ public class MainActivity extends Activity {
         layout.addView(openButton);
 
         openButton.setOnClickListener(v -> {
-            android.content.Intent intent =
-                    getPackageManager().getLaunchIntentForPackage("com.jawaker");
+            Intent intent =
+                getPackageManager().getLaunchIntentForPackage("com.jawaker");
 
             if (intent != null) {
                 startActivity(intent);
             } else {
-                startActivity(new android.content.Intent(
-                        android.content.Intent.ACTION_VIEW,
-                        android.net.Uri.parse("https://www.jawaker.com/")
+                startActivity(new Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse("https://www.jawaker.com/")
                 ));
             }
         });
 
-        Button testButton = new Button(this);
-        testButton.setText("Test Solitaire Rules");
-        layout.addView(testButton);
+        Button readButton = new Button(this);
+        readButton.setText("Read Last Screen Scan");
+        layout.addView(readButton);
 
-        TextView result = new TextView(this);
-        result.setTextSize(18);
-        result.setGravity(Gravity.CENTER);
-        layout.addView(result);
+        ScrollView scroll = new ScrollView(this);
+        result = new TextView(this);
+        result.setTextSize(14);
+        result.setText("افتح جواكر أولاً، ثم ارجع واضغط قراءة آخر فحص.");
+        scroll.addView(result);
+        layout.addView(scroll);
 
-        testButton.setOnClickListener(v -> {
-            Card queen = new Card("Q", "♠");
-            Card king = new Card("K", "♥");
-
-            if (queen.canMoveOnto(king)) {
-                result.setText("Rules test passed: Q♠ can move onto K♥");
-            } else {
-                result.setText("Rules test failed");
-            }
-        });
+        readButton.setOnClickListener(v -> readScan());
 
         setContentView(layout);
+    }
+
+    private void readScan() {
+        try (FileInputStream input =
+                 openFileInput("screen_scan.txt");
+             ByteArrayOutputStream output =
+                 new ByteArrayOutputStream()) {
+
+            byte[] buffer = new byte[4096];
+            int count;
+
+            while ((count = input.read(buffer)) != -1) {
+                output.write(buffer, 0, count);
+            }
+
+            result.setText(output.toString("UTF-8"));
+
+        } catch (Exception e) {
+            result.setText(
+                "ما في فحص محفوظ لسا. فعّل خدمة إمكانية الوصول " +
+                "وافتح جواكر ثم ارجع جرّب."
+            );
+        }
     }
 }
