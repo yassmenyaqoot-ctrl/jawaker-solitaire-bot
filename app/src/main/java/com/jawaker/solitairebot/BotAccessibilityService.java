@@ -5,57 +5,69 @@ import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.os.SystemClock;
 import android.util.Log;
+import android.graphics.Rect;
 
 public class BotAccessibilityService extends AccessibilityService {
 
     private static final String TAG = "JawakerBot";
-    private long lastEventTime = 0;
+    private long lastScanTime = 0;
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
         if (event == null) return;
 
-        // منع معالجة الأحداث المتكررة بسرعة كبيرة
         long now = SystemClock.uptimeMillis();
-        if (now - lastEventTime < 250) return;
-        lastEventTime = now;
 
-        CharSequence packageName = event.getPackageName();
-        if (packageName == null) return;
+        // فحص الشاشة عند تغيّر محتواها، مع منع التكرار السريع.
+        if (now - lastScanTime < 700) return;
+        lastScanTime = now;
 
-        String currentPackage = packageName.toString();
+        AccessibilityNodeInfo root = getRootInActiveWindow();
+        if (root == null) {
+            Log.d(TAG, "No active window available");
+            return;
+        }
 
-        // نراقب جواكر فقط، ولا ننفّذ أي حركة تلقائية حالياً
-        if (currentPackage.toLowerCase().contains("jawaker")) {
-            Log.d(TAG, "Jawaker detected: " + currentPackage);
+        try {
+            Log.d(TAG, "========== SCREEN SCAN START ==========");
+            Log.d(TAG, "Package: " + event.getPackageName());
 
-            AccessibilityNodeInfo root = getRootInActiveWindow();
-            if (root != null) {
-                inspectScreen(root);
-                root.recycle();
-            }
+            scanAllNodes(root, 0);
+
+            Log.d(TAG, "========== SCREEN SCAN END ==========");
+        } finally {
+            root.recycle();
         }
     }
 
-    private void inspectScreen(AccessibilityNodeInfo node) {
+    private void scanAllNodes(AccessibilityNodeInfo node, int depth) {
         if (node == null) return;
+
+        Rect bounds = new Rect();
+        node.getBoundsInScreen(bounds);
 
         CharSequence text = node.getText();
         CharSequence description = node.getContentDescription();
+        CharSequence className = node.getClassName();
 
-        if (text != null && text.length() > 0) {
-            Log.d(TAG, "Screen text: " + text);
-        }
-
-        if (description != null && description.length() > 0) {
-            Log.d(TAG, "Screen description: " + description);
-        }
+        Log.d(TAG,
+                "depth=" + depth
+                + " class=" + className
+                + " text=" + text
+                + " description=" + description
+                + " clickable=" + node.isClickable()
+                + " enabled=" + node.isEnabled()
+                + " bounds=" + bounds.flattenToString());
 
         for (int i = 0; i < node.getChildCount(); i++) {
             AccessibilityNodeInfo child = node.getChild(i);
+
             if (child != null) {
-                inspectScreen(child);
-                child.recycle();
+                try {
+                    scanAllNodes(child, depth + 1);
+                } finally {
+                    child.recycle();
+                }
             }
         }
     }
