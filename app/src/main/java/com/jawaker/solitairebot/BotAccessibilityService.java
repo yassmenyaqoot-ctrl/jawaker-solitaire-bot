@@ -14,11 +14,21 @@ import java.nio.charset.StandardCharsets;
 public class BotAccessibilityService extends AccessibilityService {
 
     private static final String TAG = "JawakerBot";
+    private static final String GAME_PACKAGE = "com.jawaker";
     private long lastScanTime = 0;
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
         if (event == null) return;
+
+        CharSequence packageName = event.getPackageName();
+        if (packageName == null) return;
+
+        String pkg = packageName.toString();
+
+        // Ignore our own app and unrelated apps.
+        if (pkg.equals(getPackageName())) return;
+        if (!pkg.startsWith(GAME_PACKAGE)) return;
 
         long now = SystemClock.uptimeMillis();
         if (now - lastScanTime < 1000) return;
@@ -31,9 +41,7 @@ public class BotAccessibilityService extends AccessibilityService {
 
         try {
             report.append("SCREEN SCAN\n");
-            report.append("Package: ")
-                    .append(event.getPackageName())
-                    .append("\n\n");
+            report.append("Package: ").append(pkg).append("\n\n");
 
             scanAllNodes(root, 0, report);
 
@@ -43,7 +51,7 @@ public class BotAccessibilityService extends AccessibilityService {
                         StandardCharsets.UTF_8));
             }
 
-            Log.d(TAG, "Scan saved to screen_scan.txt");
+            Log.d(TAG, "Game scan saved");
         } catch (Exception e) {
             Log.e(TAG, "Could not save scan", e);
         } finally {
@@ -73,7 +81,6 @@ public class BotAccessibilityService extends AccessibilityService {
 
         for (int i = 0; i < node.getChildCount(); i++) {
             AccessibilityNodeInfo child = node.getChild(i);
-
             if (child != null) {
                 try {
                     scanAllNodes(child, depth + 1, report);
